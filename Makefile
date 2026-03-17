@@ -15,7 +15,7 @@ NAME = ircserv
 SRCS = main.cpp \
 		Server.cpp \
 		Client.cpp \
-		Command.cpp \
+		Commands.cpp \
 
 OBJS = $(SRCS:.cpp=.o)
        
