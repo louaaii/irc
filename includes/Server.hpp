@@ -12,14 +12,17 @@ class Server {
         bool _running;
         std::string _password;
 
+        std::vector<struct pollfd> _pfds;
+        std::map<int, std::string> _inBuffers;
+
     public:
         Server(std::string port, const std::string& password);
         ~Server();
-        void removeClient(int fd);
         void run();
         void setupSocket();
         void acceptClient();
         void handleClientRead(int fd);
+        void removeClient(int fd);
 };
 
 #endif
