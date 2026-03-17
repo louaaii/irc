@@ -7,10 +7,15 @@ BOLD = \033[1m
 
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98
+INC = -Iincludes
+VPATH = srcs
 
-NAME = irc
+NAME = ircserv
 
-SRCS = main.cpp srcs/irc.cpp
+SRCS = main.cpp \
+		Server.cpp \
+		Client.cpp \
+		Command.cpp \
 
 OBJS = $(SRCS:.cpp=.o)
        
@@ -20,7 +25,7 @@ $(NAME): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o $(NAME)
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
 
 clean:
 	rm -f $(OBJS)

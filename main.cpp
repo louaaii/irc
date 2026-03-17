@@ -1,5 +1,7 @@
-#include "include/irc.hpp"
+#include "includes/Server.hpp"
 
-int main(){
-    return 0;
+int main(int ac, char **av){
+    if(ac != 3)
+        return(std::cerr << "Wrong number of args", 1);
+    
 }
