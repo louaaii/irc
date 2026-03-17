@@ -29,7 +29,11 @@ class Server{
     private :
         int _listenfd;
         int _port;
+        bool _running;
         std::string _password;
+
+        std::vector<Client>_clients;
+        std::vector<struct pollfd>_channels;
 
     public : 
         Server(int port, const std::string& password);
