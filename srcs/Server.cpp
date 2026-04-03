@@ -44,12 +44,6 @@ void Server::setupSocket(){
     int status = fcntl(_listenFd, F_SETFL, fcntl(_listenFd, F_GETFL, 0) | O_NONBLOCK);
     if(status == -1)
         perror("calling fcntl");
-    sockaddr_in;
-    bind;
-    listen;
-    _listenFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-    setsockopt();
-    fcntl();
 	ServerAdr.sin_family = AF_INET;
 	ServerAdr.sin_port = htons(_port);
 	ServerAdr.sin_addr.s_addr = INADDR_ANY;
