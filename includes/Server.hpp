@@ -15,7 +15,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <poll.h>
+#include <sys/epoll.h>
 #include "Client.hpp"
 
 class Server {
@@ -38,7 +38,7 @@ class Server {
         void acceptClient();
         void handleClientRead(int fd);
         void removeClient(int fd);
-        
+
 };
 
 #endif
