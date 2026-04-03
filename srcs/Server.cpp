@@ -1,4 +1,4 @@
-#include "../includes/Server.hpp"
+#include "Server.hpp"
 
 Server::Server(std::string port, const std::string& password){
     _port = atoi(port.c_str());
@@ -24,9 +24,9 @@ Server::~Server(){
 
 void Server::run(){
     setupSocket();
-    _pfds = _listenFd;
+    _pfds.push_back(pollfd{_listenFd, POLLIN, 0});
     _running = true;
-    while(_running){
+    while(running){
         poll(_pfds);
         for(std::Iterator it)
     }
@@ -47,6 +47,14 @@ void Server::setupSocket(){
     sockaddr_in;
     bind;
     listen;
+    _listenFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    setsockopt();
+    fcntl();
+	ServerAdr.sin_family = AF_INET;
+	ServerAdr.sin_port = htons(_port);
+	ServerAdr.sin_addr.s_addr = INADDR_ANY;
+    bind(_listenFd, (const sockaddr *)&ServerAdr, sizeof(ServerAdr));
+    listen(_listenFd, SOMAXCONN);
 
 }
 

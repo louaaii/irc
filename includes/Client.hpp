@@ -25,10 +25,10 @@ class Client{
         int socket;
 
     public:
-        Client(fd);
+        Client(int fd);
         ~Client();
 
-        get_fd();
+    	int get_fd();
         std::string get_nick();
         std::string get_pass();
 

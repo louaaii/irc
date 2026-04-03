@@ -14,6 +14,7 @@ class Server {
 
         std::vector<struct pollfd> _pfds;
         std::map<int, std::string> _inBuffers;
+		sockaddr_in ServerAdr;
 
     public:
         Server(std::string port, const std::string& password);
