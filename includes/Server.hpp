@@ -11,6 +11,7 @@ class Server {
         int _port;
         bool _running;
         std::string _password;
+        int _epollfd;
 
         std::vector<struct pollfd> _pfds;
         std::map<int, std::string> _inBuffers;
