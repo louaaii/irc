@@ -49,7 +49,6 @@ void Server::setupSocket(){
 	ServerAdr.sin_addr.s_addr = INADDR_ANY;
     bind(_listenFd, (const sockaddr *)&ServerAdr, sizeof(ServerAdr));
     listen(_listenFd, SOMAXCONN);
-
 }
 
 void Server::acceptClient(){
