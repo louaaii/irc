@@ -24,7 +24,6 @@ class Client{
         std::string _password;
         int socket;
 
-
     public:
         Client(fd);
         ~Client();

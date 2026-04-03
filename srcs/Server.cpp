@@ -11,7 +11,10 @@ Server::Server(std::string port, const std::string& password){
 
     if(_password.empty())
         throw();
+    while(run){
 
+    }
+    
     
 }
 
@@ -22,10 +25,10 @@ Server::~Server(){
 void Server::run(){
     setupSocket();
     _pfds = _listenFd;
-    _running = true
-    while(running){
+    _running = true;
+    while(_running){
         poll(_pfds);
-        for(iterator it)
+        for(std::Iterator it)
     }
 
 
@@ -33,9 +36,14 @@ void Server::run(){
 
 
 void Server::setupSocket(){
-    socket(AF_INET, SOCK_STREAM, 0);
-    setsockopt()
-    fcntl()
+    _listenFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    if(_listenFd == -1)
+        perror("Error opening socket");
+    if(setsockopt(_listenFd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int) < 0))
+        perror("setsockopt failed");
+    int status = fcntl(_listenFd, F_SETFL, fcntl(_listenFd, F_GETFL, 0) | O_NONBLOCK);
+    if(status == -1)
+        perror("calling fcntl");
     sockaddr_in;
     bind;
     listen;
