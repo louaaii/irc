@@ -1,43 +1,33 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
-#include <iostream>
-#include <stdexcept>
-#include <vector>
-#include <map>
 #include <string>
-#include <cstring>
-#include <cstdlib>
-#include <cerrno>
-
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <poll.h>
-#include <sys/epoll.h>
 
 class Client{
     private:
 
-        std::string _nickname;
-        std::string _password;
-        int socket;
+        std::string _username;
+		std::string _nickname;
+		std::string _inBuffer;
+		std::string _outBuffer;
+
+		bool _passOK;
+		bool _hasNick;
+		bool _hasUser;
+		bool _registered;
+        int _fd;
 
     public:
         Client(int fd);
         ~Client();
 
-    	int get_fd();
-        std::string get_nick();
-        std::string get_pass();
+    	int get_fd() const;
+        std::string get_nick() const;
 
-        void set_fd();
-        void set_nick();
-        void set_pass();
+        void set_fd(int fd);
+        void set_nick(std::string nick);
+		void setPassOk(bool flag);
+		bool isRegistered() const;
 };
-
-
 
 #endif
