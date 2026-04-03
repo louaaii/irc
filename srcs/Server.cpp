@@ -36,7 +36,7 @@ void Server::run(){
 
 
 void Server::setupSocket(){
-    _listenFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    _listenFd = socket(AF_INET, SOCK_STREAM, 0);
     if (_listenFd == -1)
         throw std::runtime_error("Error opening socket");
     if (setsockopt(_listenFd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) == -1)
@@ -49,7 +49,7 @@ void Server::setupSocket(){
 	ServerAdr.sin_addr.s_addr = INADDR_ANY;
     if (bind(_listenFd, (const sockaddr *)&ServerAdr, sizeof(ServerAdr)) == -1)
 		throw std::runtime_error("bind failed");
-    if (listen(_listenFd, SOMAXCONN))
+    if (listen(_listenFd, SOMAXCONN) == -1)
 		throw std::runtime_error("listen failed");
 }
 
