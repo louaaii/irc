@@ -87,3 +87,8 @@ void Server::setupSocket(){
 void Server::acceptClient(){
     
 }
+
+
+void Server::handleClientRead(int fd){
+    
+}

@@ -25,6 +25,7 @@ class Server {
         void acceptClient();
         void handleClientRead(int fd);
         void removeClient(int fd);
+        
 };
 
 #endif
