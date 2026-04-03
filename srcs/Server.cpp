@@ -86,7 +86,7 @@ void Server::setupSocket(){
 
 void Server::acceptClient(){
 	try{
-		accept
+		accept();
 	}
 	catch (...){
 		throw std::runtime_error("client");
@@ -96,4 +96,4 @@ void Server::acceptClient(){
 
 void Server::handleClientRead(int fd){
     
-}
+}   
