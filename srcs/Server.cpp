@@ -23,7 +23,7 @@ Server::~Server(){
 }
 
 void Server::run(){
-    setupSocket();
+	setupSocket();
     _pfds.push_back(pollfd{_listenFd, POLLIN, 0});
     _running = true;
     while(running){
@@ -37,19 +37,20 @@ void Server::run(){
 
 void Server::setupSocket(){
     _listenFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-    if(_listenFd == -1)
-        perror("Error opening socket");
-    if(setsockopt(_listenFd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int) < 0))
-        perror("setsockopt failed");
+    if (_listenFd == -1)
+        throw std::runtime_error("Error opening socket");
+    if (setsockopt(_listenFd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) == -1)
+        throw std::runtime_error("setsockopt failed");
     int status = fcntl(_listenFd, F_SETFL, fcntl(_listenFd, F_GETFL, 0) | O_NONBLOCK);
-    if(status == -1)
-        perror("calling fcntl");
+    if (status == -1)
+        throw std::runtime_error("calling fcntl");
 	ServerAdr.sin_family = AF_INET;
 	ServerAdr.sin_port = htons(_port);
 	ServerAdr.sin_addr.s_addr = INADDR_ANY;
-    bind(_listenFd, (const sockaddr *)&ServerAdr, sizeof(ServerAdr));
-    listen(_listenFd, SOMAXCONN);
-
+    if (bind(_listenFd, (const sockaddr *)&ServerAdr, sizeof(ServerAdr)) == -1)
+		throw std::runtime_error("bind failed");
+    if (listen(_listenFd, SOMAXCONN))
+		throw std::runtime_error("listen failed");
 }
 
 void Server::acceptClient(){
