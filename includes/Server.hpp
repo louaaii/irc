@@ -1,8 +1,21 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
+#include <iostream>
+#include <string>
+#include <vector>
+#include <stdexcept>
+#include <map>
+#include <cstring>
+#include <cstdlib>
+#include <cerrno>
 
-
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <poll.h>
 #include "Client.hpp"
 
 class Server {
@@ -13,7 +26,7 @@ class Server {
         std::string _password;
 
         std::vector<struct pollfd> _pfds;
-        std::map<int, std::string> _inBuffers;
+        std::map<int, Client> Clients;
 		sockaddr_in ServerAdr;
 
     public:

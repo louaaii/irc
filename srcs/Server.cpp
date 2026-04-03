@@ -5,6 +5,7 @@ Server::Server(std::string port, const std::string& password){
     _password = password;
     _running = false;
     _listenFd = -1;
+	ServerAdr = 0;
 
     if(_port <= 1024 || _port >= 65535)
         throw();
@@ -54,5 +55,10 @@ void Server::setupSocket(){
 }
 
 void Server::acceptClient(){
-    accept();
+	try{
+		accept
+	}
+	catch (...){
+		throw std::runtime_error("client");
+	}
 }
