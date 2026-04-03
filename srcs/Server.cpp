@@ -26,7 +26,7 @@ void Server::run(){
     setupSocket();
     _pfds.push_back(pollfd{_listenFd, POLLIN, 0});
     _running = true;
-    while(running){
+    while(_running){
         poll(_pfds);
         for(std::Iterator it)
     }
@@ -36,7 +36,7 @@ void Server::run(){
 
 
 void Server::setupSocket(){
-    _listenFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    _listenFd = socket(AF_INET, SOCK_STREAM, 0);
     if(_listenFd == -1)
         perror("Error opening socket");
     if(setsockopt(_listenFd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int) < 0))
