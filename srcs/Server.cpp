@@ -7,6 +7,7 @@ Server::Server(std::string port, const std::string& password){
     _password = password;
     _running = false;
     _listenFd = -1;
+	_epollfd = -1;
 
     if(_port <= 1024 || _port >= 65535)
         throw std::invalid_argument("Wrong port");
@@ -32,22 +33,22 @@ Server::~Server(){
 
 void Server::run(){
     struct epoll_event ev, events[MAX_EVENT];
-    
+
     _epollfd = epoll_create1(0);
     if(_epollfd == -1)
         throw std::runtime_error("epoll_create1 failed");
-    
+
     ev.events = EPOLLIN;
     ev.data.fd = _listenFd;
     if(epoll_ctl(_epollfd, EPOLL_CTL_ADD, _listenFd, &ev) == -1)
         throw std::runtime_error("epoll_ctl failed");
-    
+
     _running = true;
     while(_running) {
         int nfds = epoll_wait(_epollfd, events, MAX_EVENT, -1);
         if(nfds == -1)
             throw std::runtime_error("epoll_wait failed");
-        
+
         for(int i = 0; i < nfds; i++) {
             if(events[i].data.fd == _listenFd) {
                 acceptClient();
@@ -56,44 +57,88 @@ void Server::run(){
             }
         }
     }
-    close(_epollfd);
 }
 
+// fcntl(F_GETFL) in setupSocket():
+
+// you don’t check if F_GETFL failed before OR-ing flags.
+// If it returns -1, your F_SETFL call becomes invalid.
+
+// Zeroing ServerAdr:
+
+// you don’t zero-initialize the struct before setting fields.
+// Usually fine, but it’s a common “why is bind weird on some systems” source.
+
+// epoll_wait / accept interrupts:
+
+// epoll_wait() and accept() can return -1 with errno == EINTR.
+// Treating that as fatal will randomly kill the server when signals occur.
+
+// Event handling in run():
+
+// you only branch on fd == _listenFd.
+// You’ll also want to check events[i].events for EPOLLERR/EPOLLHUP/EPOLLRDHUP and remove clients,
+// otherwise you’ll call handleClientRead() on dead sockets.
+
+// Clients.insert(...):
+
+// fine, but if the key already exists (shouldn’t happen normally), insert won’t overwrite;
+// keep that in mind when debugging.
 
 void Server::setupSocket(){
     _listenFd = socket(AF_INET, SOCK_STREAM, 0);
     const int OPT = 1;
     if (_listenFd == -1)
         throw std::runtime_error("Error opening socket");
-    
+
     int status = fcntl(_listenFd, F_SETFL, fcntl(_listenFd, F_GETFL, 0) | O_NONBLOCK);
     if (status == -1)
         throw std::runtime_error("fcntl failed");
-    
+
     if (setsockopt(_listenFd, SOL_SOCKET, SO_REUSEADDR, &OPT, sizeof(int)) == -1)
         throw std::runtime_error("setsockopt failed");
-    
+
     ServerAdr.sin_family = AF_INET;
     ServerAdr.sin_port = htons(_port);
     ServerAdr.sin_addr.s_addr = INADDR_ANY;
-    
+
     if (bind(_listenFd, (const sockaddr *)&ServerAdr, sizeof(ServerAdr)) == -1)
         throw std::runtime_error("bind failed");
-    
+
     if (listen(_listenFd, SOMAXCONN) == -1)
         throw std::runtime_error("listen failed");
 }
 
 void Server::acceptClient(){
-	try{
-		accept();
-	}
-	catch (...){
-		throw std::runtime_error("client");
+	while (1){
+		sockaddr_in ClientAdr;
+		socklen_t CliAdrlen = sizeof(ClientAdr);
+
+		int clientFd = accept(_listenFd, (sockaddr*)&ClientAdr, &CliAdrlen);
+		if (clientFd == -1){
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				return;
+			throw std::runtime_error("accept failed");
+		}
+		int flags = fcntl(clientFd, F_GETFL, 0);
+		if (flags == -1 || fcntl(clientFd, F_SETFL, flags | O_NONBLOCK) == -1){
+			close(clientFd);
+			throw std::runtime_error("fcntl(O_NONBLOCK) fail");
+		}
+		epoll_event ev;
+		memset(&ev, 0, sizeof(ev));
+		ev.events = EPOLLIN | EPOLLRDHUP;
+		ev.data.fd = clientFd;
+
+		if (epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientFd, &ev) == -1){
+			close(clientFd);
+			throw std::runtime_error("epoll_ctl add cli fail");
+		}
+		Clients.insert(std::make_pair(clientFd, Client(clientFd)));
 	}
 }
 
 
 void Server::handleClientRead(int fd){
-    
-}   
+
+}

@@ -9,6 +9,7 @@ int main(int ac, char **av){
     }
     catch(const std::exception& e){
         std::cout << e.what() << std::endl;
-        close(server._listenFd);
+		return 1;
     }
+	return 0;
 }

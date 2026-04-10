@@ -14,10 +14,10 @@ class Client{
 		bool _passOK;
 		bool _hasNick;
 		bool _hasUser;
-		bool _registered;
         int _fd;
 
     public:
+		Client();
         Client(int fd);
         ~Client();
 
