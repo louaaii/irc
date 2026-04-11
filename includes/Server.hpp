@@ -29,6 +29,8 @@ class Server {
         std::vector<struct pollfd> _pfds;
         std::map<int, Client> Clients;
 		sockaddr_in ServerAdr;
+		std::map<int, std::string> _inBuffers;
+		std::map<int, std::string> _outBuffers;
 
     public:
         Server(std::string port, const std::string& password);
