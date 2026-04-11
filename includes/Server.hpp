@@ -9,6 +9,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cerrno>
+#include <sstream>
 
 #include <unistd.h>
 #include <fcntl.h>
