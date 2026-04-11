@@ -60,7 +60,9 @@ void Server::run(){
                     removeClient(events[i].data.fd);
                 } else if(events[i].events & EPOLLIN) {
                     handleClientRead(events[i].data.fd);
-                }
+                } else if(events[i].events & EPOLLOUT){
+					handleClientWrite(events[i].data.fd);
+				}
             }
         }
     }
@@ -112,7 +114,7 @@ void Server::acceptClient(){
 		}
 		epoll_event ev;
 		memset(&ev, 0, sizeof(ev));
-		ev.events = EPOLLIN | EPOLLRDHUP;
+		ev.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP;
 		ev.data.fd = clientFd;
 
 		if (epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientFd, &ev) == -1){
@@ -146,9 +148,18 @@ void Server::handleClientRead(int fd){
 		std::string command = _inBuffers[fd].substr(0, pos);
 		_inBuffers[fd].erase(0, pos + 2);
 
-		// TODO: Parse and execute command
-		// Commands::execute(fd, command, this);
 	}
+}
+
+void Server::handleClientWrite(int fd){
+	if (_outBuffers[fd].empty())
+		return ;
+	ssize_t sent = send(fd, _outBuffers[fd].c_str(), _outBuffers[fd].size(), 0);
+	if (sent > 0)
+		_outBuffers[fd].erase(0, sent);
+	else if (sent == -1)
+		if (errno != EAGAIN && errno != EWOULDBLOCK)
+			removeClient(fd);
 }
 
 void Server::removeClient(int fd) {
