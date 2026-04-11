@@ -1,4 +1,5 @@
-#include "../includes/Server.hpp"
+#include "Server.hpp"
+#include "Commands.hpp"
 
 #define MAX_EVENT 10
 
@@ -147,6 +148,8 @@ void Server::handleClientRead(int fd){
 	while ((pos = _inBuffers[fd].find("\r\n")) != std::string::npos) {
 		std::string command = _inBuffers[fd].substr(0, pos);
 		_inBuffers[fd].erase(0, pos + 2);
+
+		Commands::execute(fd, command, this);
 
 	}
 }
