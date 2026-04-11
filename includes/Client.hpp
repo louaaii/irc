@@ -11,10 +11,10 @@ class Client{
 		std::string _inBuffer;
 		std::string _outBuffer;
 
+        int _fd;
 		bool _passOK;
 		bool _hasNick;
 		bool _hasUser;
-        int _fd;
 
     public:
 		Client();

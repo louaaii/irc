@@ -26,7 +26,6 @@ class Server {
         std::string _password;
         int _epollfd;
 
-        std::vector<struct pollfd> _pfds;
         std::map<int, Client> Clients;
 		sockaddr_in ServerAdr;
 		std::map<int, std::string> _inBuffers;
