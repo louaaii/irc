@@ -11,10 +11,10 @@ class Client{
 		std::string _inBuffer;
 		std::string _outBuffer;
 
+        int _fd;
 		bool _passOK;
 		bool _hasNick;
 		bool _hasUser;
-        int _fd;
 
     public:
 		Client();
@@ -28,6 +28,15 @@ class Client{
         void set_nick(std::string nick);
 		void setPassOk(bool flag);
 		bool isRegistered() const;
+
+
+		// outils pour plus tard
+		void set_Username(std::string username);
+		void joinChannel(std::string channelName);
+		void partChannel(std::string channelName);
+		bool isInChannel(std::string channelName);
+		void set_hostname(std::string hostname);
+		
 };
 
 #endif
