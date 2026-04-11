@@ -39,6 +39,7 @@ class Server {
         void setupSocket();
         void acceptClient();
         void handleClientRead(int fd);
+		void handleClientWrite(int fd);
         void removeClient(int fd);
 
 };
