@@ -24,15 +24,15 @@ class Server {
         int _listenFd;
         int _port;
         bool _running;
-        std::string _password;
         int _epollfd;
 
-        std::map<int, Client> Clients;
 		sockaddr_in ServerAdr;
 		std::map<int, std::string> _inBuffers;
-		std::map<int, std::string> _outBuffers;
 
     public:
+        std::string _password;
+        std::map<int, Client> Clients;
+		std::map<int, std::string> _outBuffers;
         Server(std::string port, const std::string& password);
         ~Server();
         void run();
@@ -41,6 +41,7 @@ class Server {
         void handleClientRead(int fd);
 		void handleClientWrite(int fd);
         void removeClient(int fd);
+        const std::string& getPassword() const;
 
 };
 

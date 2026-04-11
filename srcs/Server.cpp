@@ -169,3 +169,8 @@ void Server::removeClient(int fd) {
 	_inBuffers.erase(fd);
 	_outBuffers.erase(fd);
 }
+
+
+const std::string& Server::getPassword() const {
+    return _password;
+}
