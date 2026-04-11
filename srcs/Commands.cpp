@@ -58,7 +58,7 @@ bool Commands::isChannelOperator(int fd, const std::string& channelName, Server*
 void Commands::parseCommand(const std::string& command, std::vector<std::string>& args) {
     std::istringstream iss(command);
     std::string token;
-    
+
     while (iss >> token) {
         if (token.empty())
             continue;
@@ -73,13 +73,13 @@ void Commands::parseCommand(const std::string& command, std::vector<std::string>
 void Commands::execute(int fd, const std::string& command, Server* server) {
     std::vector<std::string> args;
     parseCommand(command, args);
-    
+
     if (args.empty())
         return;
-    
+
     const std::string& cmd = args[0];
-    
-    if (cmd == "PASS") 
+
+    if (cmd == "PASS")
         PASS(fd, args, server);
     else if (cmd == "NICK")
         NICK(fd, args, server);
@@ -106,7 +106,7 @@ void Commands::execute(int fd, const std::string& command, Server* server) {
     else {
         sendError(fd, "Unknown command: " + cmd, server);
     }
-}   
+}
 
 
 void Commands::PASS(int fd, const std::vector<std::string>& args, Server* server) {
@@ -125,7 +125,7 @@ void Commands::PASS(int fd, const std::vector<std::string>& args, Server* server
     if (password == server->_password) {
         client.setPassOk(true);
         sendToClient(fd, ":server NOTICE AUTH :Password accepted", server);
-    } 
+    }
     else
         sendError(fd, "464 PASS :Password incorrect", server);
 }
@@ -143,7 +143,7 @@ void Commands::NICK(int fd, const std::vector<std::string>& args, Server* server
         sendError(fd, "432 NICK " + nickname + " :Erroneous nickname", server);
         return;
     }
-    for (std::map<int, Client>::iterator it = server->Clients.begin(); 
+    for (std::map<int, Client>::iterator it = server->Clients.begin();
          it != server->Clients.end(); ++it) {
         if (it->first != fd && it->second.get_nick() == nickname) {
             sendError(fd, "433 NICK " + nickname + " :Nickname is already in use", server);
@@ -171,6 +171,13 @@ void Commands::USER(int fd, const std::vector<std::string>& args, Server* server
     client.set_Username(username);
     client.set_hostname(hostname);
     sendToClient(fd, ":server NOTICE AUTH :User information set", server);
+
+    if (client.isRegistered()) {
+        std::string nick = client.get_nick();
+        sendToClient(fd, ":server 001 " + nick + " :Welcome to IRC", server);
+        sendToClient(fd, ":server 002 " + nick + " :Your host is john tekken", server);
+        sendToClient(fd, ":server 003 " + nick + " :This server was created today", server);
+    }
 }
 
 void Commands::PING(int fd, const std::vector<std::string>& args, Server* server) {
@@ -262,7 +269,7 @@ void Commands::PRIVMSG(int fd, const std::vector<std::string>& args, Server* ser
         }
         std::string channelMsg = ":" + client.get_nick() + " PRIVMSG " + target + " :" + message;
         sendToChannel(target, channelMsg, server, fd);
-    } 
+    }
     else {
         bool found = false;
         for (std::map<int, Client>::iterator it = server->Clients.begin();
@@ -313,7 +320,7 @@ void Commands::TOPIC(int fd, const std::vector<std::string>& args, Server* serve
 void Commands::KICK(int fd, const std::vector<std::string>& args, Server* server) {
     if (server->Clients.find(fd) == server->Clients.end())
         return;
-    
+
     Client& client = server->Clients[fd];
     if (args.size() < 3) {
         sendError(fd, "461 KICK :Not enough parameters", server);
@@ -337,7 +344,7 @@ void Commands::KICK(int fd, const std::vector<std::string>& args, Server* server
          it != server->Clients.end(); ++it) {
         if (it->second.get_nick() == targetNick && it->second.isInChannel(channelName)) {
             it->second.partChannel(channelName);
-            std::string kickMsg = ":" + client.get_nick() + " KICK " + channelName + 
+            std::string kickMsg = ":" + client.get_nick() + " KICK " + channelName +
                                  " " + targetNick + " :" + reason;
             sendToClient(it->first, kickMsg, server);
             sendToClient(fd, kickMsg, server);
@@ -406,14 +413,14 @@ void Commands::MODE(int fd, const std::vector<std::string>& args, Server* server
     }
     bool add = true;
     size_t paramIdx = 3;
-    
+
     for (size_t i = 0; i < modes.length(); ++i) {
         char modeChar = modes[i];
-        
+
         if (modeChar == '+') {
             add = true;
             continue;
-        } 
+        }
         else if (modeChar == '-') {
             add = false;
             continue;
@@ -432,7 +439,7 @@ void Commands::MODE(int fd, const std::vector<std::string>& args, Server* server
             if (paramIdx < args.size()) {
                 std::string opNick = args[paramIdx];
                 paramIdx++;
-                
+
                 for (std::map<int, Client>::iterator it = server->Clients.begin();
                      it != server->Clients.end(); ++it) {
                     if (it->second.get_nick() == opNick && it->second.isInChannel(target)) {
