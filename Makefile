@@ -16,6 +16,7 @@ SRCS = main.cpp \
 		Server.cpp \
 		Client.cpp \
 		Commands.cpp \
+		Channel.cpp \
 
 OBJS = $(SRCS:.cpp=.o)
        

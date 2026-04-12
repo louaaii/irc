@@ -18,6 +18,7 @@
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include "Client.hpp"
+#include "Channel.hpp"
 
 class Server {
     private:
@@ -33,6 +34,7 @@ class Server {
         std::string _password;
         std::map<int, Client> Clients;
 		std::map<int, std::string> _outBuffers;
+        std::map<std::string, Channel> _channels;
         Server(std::string port, const std::string& password);
         ~Server();
         void run();

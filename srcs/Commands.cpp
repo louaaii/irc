@@ -1,6 +1,7 @@
 #include "Commands.hpp"
 #include <iostream>
 #include <cctype>
+#include <cstdlib>
 
 void Commands::sendToClient(int fd, const std::string& message, Server* server) {
     if (server->Clients.find(fd) != server->Clients.end()) {
@@ -16,14 +17,16 @@ void Commands::sendError(int fd, const std::string& errorMsg, Server* server) {
     sendToClient(fd, error, server);
 }
 
-void Commands::sendToChannel(const std::string& channelName, const std::string& message,
-                            Server* server, int excludeFd) {
-    (void)channelName;
-    (void)message;
-    (void)server;
-    (void)excludeFd;
-    // Find channel and send to all members except excludeFd
-    // This requires Channel implementation to be complete
+void Commands::sendToChannel(const std::string& channelName, const std::string& message, Server* server, int excludeFd) {
+    if (server->_channels.find(channelName) == server->_channels.end())
+        return;
+    Channel& channel = server->_channels[channelName];
+    for (std::map<int, Client>::iterator it = server->Clients.begin();
+         it != server->Clients.end(); ++it) {
+        if (it->first != excludeFd && it->second.isInChannel(channelName)) {
+            sendToClient(it->first, message, server);
+        }
+    }
 }
 
 bool Commands::isValidNickname(const std::string& nick) {
@@ -46,12 +49,10 @@ bool Commands::isValidChannelName(const std::string& name) {
 }
 
 bool Commands::isChannelOperator(int fd, const std::string& channelName, Server* server) {
-    (void)fd;
-    (void)channelName;
-    (void)server;
-    // Check if client is operator of channel
-    // This requires Channel implementation to be complete
-    return true;  // Placeholder
+    if (server->_channels.find(channelName) == server->_channels.end())
+        return false;
+    Channel& channel = server->_channels[channelName];
+    return channel.isOperator(fd);
 }
 
 
@@ -62,9 +63,8 @@ void Commands::parseCommand(const std::string& command, std::vector<std::string>
     while (iss >> token) {
         if (token.empty())
             continue;
-        if (args.empty()) {
+        if (args.empty())
             std::transform(token.begin(), token.end(), token.begin(), ::toupper);
-        }
         args.push_back(token);
     }
 }
@@ -103,9 +103,8 @@ void Commands::execute(int fd, const std::string& command, Server* server) {
         KICK(fd, args, server);
     else if (cmd == "INVITE")
         INVITE(fd, args, server);
-    else {
+    else
         sendError(fd, "Unknown command: " + cmd, server);
-    }
 }
 
 
@@ -411,9 +410,12 @@ void Commands::MODE(int fd, const std::vector<std::string>& args, Server* server
         sendError(fd, "482 " + target + " :You're not channel operator", server);
         return;
     }
+    if (server->_channels.find(target) == server->_channels.end()) {
+        server->_channels[target] = Channel(target);
+    }
+    Channel& channel = server->_channels[target];
     bool add = true;
     size_t paramIdx = 3;
-
     for (size_t i = 0; i < modes.length(); ++i) {
         char modeChar = modes[i];
 
@@ -425,42 +427,61 @@ void Commands::MODE(int fd, const std::vector<std::string>& args, Server* server
             add = false;
             continue;
         }
-        if (modeChar == 'i') {
-            // Invite-only mode
-        } else if (modeChar == 't') {
-            // Topic restricted mode
-        } else if (modeChar == 'k') {
-            // Channel key (password)
+        if (modeChar == 'i') 
+            channel.setInviteOnly(add);
+        else if (modeChar == 't')
+            channel.setTopicRestricted(add);
+        else if (modeChar == 'k') {
             if (add && paramIdx < args.size()) {
+                channel.setKey(args[paramIdx]);
                 paramIdx++;
-            }
-        } else if (modeChar == 'o') {
-            // Operator privilege
+            } 
+            else if (!add)
+                channel.removeKey();
+        } 
+        else if (modeChar == 'o') {
             if (paramIdx < args.size()) {
                 std::string opNick = args[paramIdx];
                 paramIdx++;
-
                 for (std::map<int, Client>::iterator it = server->Clients.begin();
                      it != server->Clients.end(); ++it) {
                     if (it->second.get_nick() == opNick && it->second.isInChannel(target)) {
-                        // Change operator status
+                        if (add) 
+                            channel.addOperator(it->first);
+                        else 
+                            channel.removeOperator(it->first);
                         break;
                     }
                 }
             }
-        } else if (modeChar == 'l') {
-            // User limit
+        } 
+        else if (modeChar == 'l') {
             if (add && paramIdx < args.size()) {
-                paramIdx++;
-            }
+                std::string limitStr = args[paramIdx];
+                bool validLimit = true;
+                for (size_t j = 0; j < limitStr.length(); ++j) {
+                    if (!std::isdigit(limitStr[j])) {
+                        validLimit = false;
+                        break;
+                    }
+                }
+                if (validLimit) {
+                    int limit = atoi(limitStr.c_str());
+                    if (limit > 0)
+                        channel.setUserLimit(limit);
+                    paramIdx++;
+                }
+            } 
+            else if (!add)
+                channel.removeUserLimit();
         }
     }
     std::string modeMsg = ":" + client.get_nick() + " MODE " + target + " " + modes;
     if (paramIdx < args.size()) {
-        for (size_t i = paramIdx; i < args.size(); ++i) {
+        for (size_t i = 3; i < args.size(); ++i) {
             modeMsg += " " + args[i];
         }
     }
-    sendToClient(fd, modeMsg, server);
+    sendToChannel(target, modeMsg, server, -1);
 }
 
