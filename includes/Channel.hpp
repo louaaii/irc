@@ -9,8 +9,8 @@ class Channel {
 private:
     std::string _name;
     std::string _topic;
-    std::map<int, Client*> _members; // Map of client file descriptors to Client pointers
-    std::set<int> _operators; // Set of client file descriptors who are operators   
+    std::map<int, Client*> _members; 
+    std::set<int> _operators;  
 public:
     Channel(const std::string& name);
     ~Channel();
