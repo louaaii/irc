@@ -1,9 +1,10 @@
 #include "Channel.hpp"
 #include <cstdlib>
 
-Channel::Channel(const std::string& name) 
-    : _name(name), _topic(""), _inviteOnly(false), 
-      _topicRestricted(false), _key(""), _userLimit(-1) {
+Channel::Channel() : _name(""), _topic(""), _inviteOnly(false), _topicRestricted(false), _key(""), _userLimit(-1) {
+}
+
+Channel::Channel(const std::string& name) : _name(name), _topic(""), _inviteOnly(false), _topicRestricted(false), _key(""), _userLimit(-1) {
 }
 
 Channel::~Channel() {
@@ -38,9 +39,8 @@ bool Channel::isMember(int fd) const {
 }
 
 void Channel::addOperator(int fd) {
-    if (isMember(fd)) {
+    if (isMember(fd))
         _operators.insert(fd);
-    }
 }
 
 void Channel::removeOperator(int fd) {

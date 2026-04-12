@@ -30,3 +30,24 @@ void Client::set_fd(int fd){
 void Client::setPassOk(bool flag) {
 	_passOK = flag;
 }
+
+void Client::set_Username(std::string username) {
+	_username = username;
+	_hasUser = !_username.empty();
+}
+
+void Client::set_hostname(std::string hostname) {
+	_hostname = hostname;
+}
+
+void Client::joinChannel(std::string channelName) {
+	_channels.insert(channelName);
+}
+
+void Client::partChannel(std::string channelName) {
+	_channels.erase(channelName);
+}
+
+bool Client::isInChannel(std::string channelName) {
+	return _channels.find(channelName) != _channels.end();
+}

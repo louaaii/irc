@@ -1,4 +1,5 @@
 #include "Commands.hpp"
+#include "Channel.hpp"
 #include <iostream>
 #include <cctype>
 #include <cstdlib>
@@ -20,7 +21,6 @@ void Commands::sendError(int fd, const std::string& errorMsg, Server* server) {
 void Commands::sendToChannel(const std::string& channelName, const std::string& message, Server* server, int excludeFd) {
     if (server->_channels.find(channelName) == server->_channels.end())
         return;
-    Channel& channel = server->_channels[channelName];
     for (std::map<int, Client>::iterator it = server->Clients.begin();
          it != server->Clients.end(); ++it) {
         if (it->first != excludeFd && it->second.isInChannel(channelName)) {

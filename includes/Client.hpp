@@ -2,14 +2,17 @@
 #define CLIENT_HPP
 
 #include <string>
+#include <set>
 
 class Client{
     private:
 
         std::string _username;
 		std::string _nickname;
+		std::string _hostname;
 		std::string _inBuffer;
 		std::string _outBuffer;
+		std::set<std::string> _channels;
 
         int _fd;
 		bool _passOK;
