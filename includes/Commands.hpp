@@ -11,6 +11,7 @@
 class Commands {
     public:
         static void parseCommand(const std::string& command, std::vector<std::string>& args);
+        static std::string extractMessage(const std::vector<std::string>& args, size_t startIdx);
         static void execute(int fd, const std::string& command, Server* server);
 
         static void PASS(int fd, const std::vector<std::string>& args, Server* server);

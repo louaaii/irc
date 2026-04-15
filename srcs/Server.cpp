@@ -70,10 +70,12 @@ void Server::run(){
 }
 
 void Server::setupSocket(){
+    std::cout << "[SERVER] Setting up socket..." << std::endl;
     _listenFd = socket(AF_INET, SOCK_STREAM, 0);
     const int OPT = 1;
     if (_listenFd == -1)
         throw std::runtime_error("Error opening socket");
+    std::cout << "[SERVER] Socket created successfully (fd: " << _listenFd << ")" << std::endl;
 
     int flags = fcntl(_listenFd, F_GETFL, 0);
     if (flags == -1)
@@ -93,6 +95,7 @@ void Server::setupSocket(){
 
     if (listen(_listenFd, SOMAXCONN) == -1)
         throw std::runtime_error("listen failed");
+    std::cout << "[SERVER] Listening on port " << _port << "..." << std::endl;
 }
 
 void Server::acceptClient(){
@@ -108,6 +111,7 @@ void Server::acceptClient(){
 				return;
 			throw std::runtime_error("accept failed");
 		}
+		std::cout << "[CLIENT] New client connected: fd=" << clientFd << " (" << inet_ntoa(ClientAdr.sin_addr) << ":" << ntohs(ClientAdr.sin_port) << ")" << std::endl;
 		int flags = fcntl(clientFd, F_GETFL, 0);
 		if (flags == -1 || fcntl(clientFd, F_SETFL, flags | O_NONBLOCK) == -1){
 			close(clientFd);
@@ -123,6 +127,7 @@ void Server::acceptClient(){
 			throw std::runtime_error("epoll_ctl add cli fail");
 		}
 		Clients[clientFd] = Client(clientFd);
+		std::cout << "[CLIENT] Client " << clientFd << " registered in epoll" << std::endl;
 	}
 }
 
@@ -133,15 +138,18 @@ void Server::handleClientRead(int fd){
 
 	if (bytesRead == -1) {
 		if (errno != EAGAIN && errno != EWOULDBLOCK) {
+			std::cout << "[CLIENT] Error reading from client " << fd << std::endl;
 			removeClient(fd);
 		}
 		return;
 	}
 	if (bytesRead == 0) {
+		std::cout << "[CLIENT] Client " << fd << " disconnected (0 bytes read)" << std::endl;
 		removeClient(fd);
 		return;
 	}
 	buffer[bytesRead] = '\0';
+	std::cout << "[CLIENT] Received from " << fd << ": " << buffer << std::endl;
 	_inBuffers[fd] += buffer;
 
 	size_t pos = 0;
@@ -149,6 +157,7 @@ void Server::handleClientRead(int fd){
 		std::string command = _inBuffers[fd].substr(0, pos);
 		_inBuffers[fd].erase(0, pos + 2);
 
+		std::cout << "[COMMAND] Executing: " << command << " (fd: " << fd << ")" << std::endl;
 		Commands::execute(fd, command, this);
 
 	}
@@ -157,20 +166,27 @@ void Server::handleClientRead(int fd){
 void Server::handleClientWrite(int fd){
 	if (_outBuffers[fd].empty())
 		return ;
+	std::cout << "[SEND] Sending to " << fd << ": " << _outBuffers[fd] << std::endl;
 	ssize_t sent = send(fd, _outBuffers[fd].c_str(), _outBuffers[fd].size(), 0);
-	if (sent > 0)
+	if (sent > 0) {
+		std::cout << "[SEND] Sent " << sent << " bytes to client " << fd << std::endl;
 		_outBuffers[fd].erase(0, sent);
-	else if (sent == -1)
+	}
+	else if (sent == -1) {
+		std::cout << "[SEND] Error sending to client " << fd << std::endl;
 		if (errno != EAGAIN && errno != EWOULDBLOCK)
 			removeClient(fd);
+	}
 }
 
 void Server::removeClient(int fd) {
+	std::cout << "[CLIENT] Removing client " << fd << "..." << std::endl;
 	epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, NULL);
 	close(fd);
 	Clients.erase(fd);
 	_inBuffers.erase(fd);
 	_outBuffers.erase(fd);
+	std::cout << "[CLIENT] Client " << fd << " removed successfully" << std::endl;
 }
 
 

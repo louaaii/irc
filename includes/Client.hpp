@@ -31,6 +31,8 @@ class Client{
         void set_nick(std::string nick);
 		void setPassOk(bool flag);
 		bool isRegistered() const;
+		bool isPassOk() const;
+		bool hasNick() const;
 
 
 		// outils pour plus tard

@@ -5,6 +5,8 @@
 #include <map>
 #include <set>
 
+#include <iostream>
+
 
 class Channel {
     private:
@@ -27,6 +29,7 @@ class Channel {
         void addMember(Client* client);
         void removeMember(int fd);
         bool isMember(int fd) const;
+        int get_member_count() const;
         void addOperator(int fd);
         void removeOperator(int fd);
         bool isOperator(int fd) const;

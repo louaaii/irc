@@ -11,6 +11,8 @@
 #include <cerrno>
 #include <sstream>
 
+#include <ostream>
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
