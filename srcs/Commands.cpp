@@ -77,7 +77,6 @@ std::string Commands::extractMessage(const std::vector<std::string>& args, size_
     for (size_t i = startIdx; i < args.size(); ++i) {
         if (i > startIdx) message += " ";
         std::string token = args[i];
-        // Strip leading colon from first token if present
         if (i == startIdx && !token.empty() && token[0] == ':') {
             token = token.substr(1);
         }
@@ -284,7 +283,6 @@ void Commands::JOIN(int fd, const std::vector<std::string>& args, Server* server
     }
     std::cout << "[JOIN] Client " << fd << " (" << client.get_nick() << ") joining channel " << channelName << std::endl;
 
-    // Create channel if it doesn't exist
     if (server->_channels.find(channelName) == server->_channels.end()) {
         std::cout << "[JOIN] Creating new channel: " << channelName << std::endl;
         server->_channels[channelName] = Channel(channelName);
@@ -292,10 +290,8 @@ void Commands::JOIN(int fd, const std::vector<std::string>& args, Server* server
 
     Channel& channel = server->_channels[channelName];
 
-    // Check if channel has a key and validate it
     std::string requiredKey = channel.getKey();
     if (!requiredKey.empty()) {
-        // Channel has a key, user must provide correct key
         if (args.size() < 3) {
             std::cout << "[JOIN] Channel requires a key" << std::endl;
             sendError(fd, "475 " + channelName + " :Cannot join channel (+k)", server);
@@ -308,14 +304,12 @@ void Commands::JOIN(int fd, const std::vector<std::string>& args, Server* server
         }
     }
 
-    // Check if channel is invite-only
     if (channel.isInviteOnly()) {
         if (!channel.isUserInvited(fd)) {
             std::cout << "[JOIN] Channel is invite-only and user is not invited" << std::endl;
             sendError(fd, "473 " + channelName + " :Cannot join channel (+i)", server);
             return;
         }
-        // User was invited, remove them from invite list after joining
         channel.removeInvitedUser(fd);
     }
 
@@ -324,7 +318,6 @@ void Commands::JOIN(int fd, const std::vector<std::string>& args, Server* server
     client.joinChannel(channelName);
     channel.addMember(&client);
 
-    // Make first member operator
     if (isFirstMember) {
         std::cout << "[JOIN] " << client.get_nick() << " is first member, making operator" << std::endl;
         channel.addOperator(fd);
@@ -523,7 +516,6 @@ void Commands::INVITE(int fd, const std::vector<std::string>& args, Server* serv
     }
     std::cout << "[INVITE] Sending invite to " << targetNick << " for channel " << channelName << std::endl;
 
-    // Add user to the channel's invite list
     if (server->_channels.find(channelName) != server->_channels.end()) {
         server->_channels[channelName].addInvitedUser(targetFd);
     }
