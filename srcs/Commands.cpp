@@ -72,7 +72,7 @@ void Commands::parseCommand(const std::string& command, std::vector<std::string>
 std::string Commands::extractMessage(const std::vector<std::string>& args, size_t startIdx) {
     if (startIdx >= args.size())
         return "";
-    
+
     std::string message;
     for (size_t i = startIdx; i < args.size(); ++i) {
         if (i > startIdx) message += " ";
@@ -205,8 +205,11 @@ void Commands::USER(int fd, const std::vector<std::string>& args, Server* server
         return;
     }
     if (args.size() < 5) {
-        std::cout << "[USER] Invalid arguments" << std::endl;
-        sendError(fd, "461 USER :Not enough parameters", server);
+        std::cout << "[USER] Invalid arguments - args.size() = " << args.size() << std::endl;
+        for (size_t i = 0; i < args.size(); ++i) {
+            std::cout << "[USER] args[" << i << "] = " << args[i] << std::endl;
+        }
+        sendError(fd, "461 USER :Not enough parameters\nUsage : 'USER <username> <hostname> <servername> <realname>", server);
         return;
     }
     const std::string& username = args[1];
@@ -280,25 +283,42 @@ void Commands::JOIN(int fd, const std::vector<std::string>& args, Server* server
         return;
     }
     std::cout << "[JOIN] Client " << fd << " (" << client.get_nick() << ") joining channel " << channelName << std::endl;
-    
+
     // Create channel if it doesn't exist
     if (server->_channels.find(channelName) == server->_channels.end()) {
         std::cout << "[JOIN] Creating new channel: " << channelName << std::endl;
         server->_channels[channelName] = Channel(channelName);
     }
-    
+
     Channel& channel = server->_channels[channelName];
+
+    // Check if channel has a key and validate it
+    std::string requiredKey = channel.getKey();
+    if (!requiredKey.empty()) {
+        // Channel has a key, user must provide correct key
+        if (args.size() < 3) {
+            std::cout << "[JOIN] Channel requires a key" << std::endl;
+            sendError(fd, "475 " + channelName + " :Cannot join channel (+k)", server);
+            return;
+        }
+        if (channelKey != requiredKey) {
+            std::cout << "[JOIN] Invalid channel key" << std::endl;
+            sendError(fd, "475 " + channelName + " :Cannot join channel (+k)", server);
+            return;
+        }
+    }
+
     bool isFirstMember = channel.get_member_count() == 0;
-    
+
     client.joinChannel(channelName);
     channel.addMember(&client);
-    
+
     // Make first member operator
     if (isFirstMember) {
         std::cout << "[JOIN] " << client.get_nick() << " is first member, making operator" << std::endl;
         channel.addOperator(fd);
     }
-    
+
     std::string joinMsg = ":" + client.get_nick() + " JOIN " + channelName;
     sendToClient(fd, joinMsg, server);
     sendToChannel(channelName, joinMsg, server, fd);
@@ -343,7 +363,7 @@ void Commands::PRIVMSG(int fd, const std::vector<std::string>& args, Server* ser
     }
     const std::string& target = args[1];
     std::string message = extractMessage(args, 2);
-    
+
     if (target[0] == '#') {
         std::cout << "[PRIVMSG] Sending message to channel " << target << std::endl;
         if (server->_channels.find(target) == server->_channels.end()) {
@@ -503,6 +523,9 @@ void Commands::MODE(int fd, const std::vector<std::string>& args, Server* server
     Client& client = server->Clients[fd];
     if (args.size() < 3) {
         std::cout << "[MODE] Invalid arguments" << std::endl;
+        sendToClient(fd, ":server NOTICE " + client.get_nick() + " :Usage: MODE <channel> <modes> [parameters]", server);
+        sendToClient(fd, ":server NOTICE " + client.get_nick() + " :Example: MODE #channel +i", server);
+        sendToClient(fd, ":server NOTICE " + client.get_nick() + " :Example: MODE #channel +k password", server);
         sendError(fd, "461 MODE :Not enough parameters", server);
         return;
     }
@@ -531,6 +554,7 @@ void Commands::MODE(int fd, const std::vector<std::string>& args, Server* server
     Channel& channel = server->_channels[target];
     bool add = true;
     size_t paramIdx = 3;
+    bool invalidMode = false;
     for (size_t i = 0; i < modes.length(); ++i) {
         char modeChar = modes[i];
 
@@ -555,12 +579,12 @@ void Commands::MODE(int fd, const std::vector<std::string>& args, Server* server
                 std::cout << "[MODE] Setting key: " << args[paramIdx] << std::endl;
                 channel.setKey(args[paramIdx]);
                 paramIdx++;
-            } 
+            }
             else if (!add) {
                 std::cout << "[MODE] Removing key" << std::endl;
                 channel.removeKey();
             }
-        } 
+        }
         else if (modeChar == 'o') {
             if (paramIdx < args.size()) {
                 std::string opNick = args[paramIdx];
@@ -580,7 +604,7 @@ void Commands::MODE(int fd, const std::vector<std::string>& args, Server* server
                     }
                 }
             }
-        } 
+        }
         else if (modeChar == 'l') {
             if (add && paramIdx < args.size()) {
                 std::string limitStr = args[paramIdx];
@@ -599,12 +623,26 @@ void Commands::MODE(int fd, const std::vector<std::string>& args, Server* server
                     }
                     paramIdx++;
                 }
-            } 
+            }
             else if (!add) {
                 std::cout << "[MODE] Removing user limit" << std::endl;
                 channel.removeUserLimit();
             }
         }
+        else {
+            std::cout << "[MODE] Invalid mode: " << modeChar << std::endl;
+            invalidMode = true;
+        }
+    }
+
+    if (invalidMode) {
+        sendToClient(fd, ":server NOTICE " + client.get_nick() + " :Available channel modes:", server);
+        sendToClient(fd, ":server NOTICE " + client.get_nick() + " :  i - Invite-only channel", server);
+        sendToClient(fd, ":server NOTICE " + client.get_nick() + " :  t - Topic restricted (ops only)", server);
+        sendToClient(fd, ":server NOTICE " + client.get_nick() + " :  k - Channel key (password)", server);
+        sendToClient(fd, ":server NOTICE " + client.get_nick() + " :  o - Channel operator", server);
+        sendToClient(fd, ":server NOTICE " + client.get_nick() + " :  l - User limit", server);
+        invalidMode = false;
     }
     std::cout << "[MODE] Mode change complete for " << target << std::endl;
     std::string modeMsg = ":" + client.get_nick() + " MODE " + target + " " + modes;

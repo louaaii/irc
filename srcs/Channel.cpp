@@ -66,14 +66,26 @@ void Channel::setInviteOnly(bool flag) {
     _inviteOnly = flag;
 }
 
+bool Channel::isInviteOnly() const {
+    return _inviteOnly;
+}
+
 void Channel::setTopicRestricted(bool flag) {
     std::cout << "[CHANNEL] Setting topic-restricted mode to " << flag << " for " << _name << std::endl;
     _topicRestricted = flag;
 }
 
+bool Channel::isTopicRestricted() const {
+    return _topicRestricted;
+}
+
 void Channel::setKey(const std::string& key) {
     std::cout << "[CHANNEL] Setting key for " << _name << std::endl;
     _key = key;
+}
+
+std::string Channel::getKey() const {
+    return _key;
 }
 
 void Channel::removeKey() {
@@ -84,6 +96,10 @@ void Channel::removeKey() {
 void Channel::setUserLimit(int limit) {
     std::cout << "[CHANNEL] Setting user limit to " << limit << " for " << _name << std::endl;
     _userLimit = limit;
+}
+
+int Channel::getUserLimit() const {
+    return _userLimit;
 }
 
 void Channel::removeUserLimit() {
