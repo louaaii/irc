@@ -77,11 +77,8 @@ void Server::setupSocket(){
         throw std::runtime_error("Error opening socket");
     std::cout << "[SERVER] Socket created successfully (fd: " << _listenFd << ")" << std::endl;
 
-    int flags = fcntl(_listenFd, F_GETFL, 0);
-    if (flags == -1)
-        throw std::runtime_error("fcntl F_GETFL failed");
-    if (fcntl(_listenFd, F_SETFL, flags | O_NONBLOCK) == -1)
-        throw std::runtime_error("fcntl F_SETFL failed");
+    if (fcntl(_listenFd, F_SETFL, O_NONBLOCK) == -1)
+        throw std::runtime_error("fcntl O_NONBLOCK failed");
 
     if (setsockopt(_listenFd, SOL_SOCKET, SO_REUSEADDR, &OPT, sizeof(int)) == -1)
         throw std::runtime_error("setsockopt failed");
@@ -112,10 +109,9 @@ void Server::acceptClient(){
 			throw std::runtime_error("accept failed");
 		}
 		std::cout << "[CLIENT] New client connected: fd=" << clientFd << " (" << inet_ntoa(ClientAdr.sin_addr) << ":" << ntohs(ClientAdr.sin_port) << ")" << std::endl;
-		int flags = fcntl(clientFd, F_GETFL, 0);
-		if (flags == -1 || fcntl(clientFd, F_SETFL, flags | O_NONBLOCK) == -1){
+		if (fcntl(clientFd, F_SETFL, O_NONBLOCK) == -1){
 			close(clientFd);
-			throw std::runtime_error("fcntl(O_NONBLOCK) fail");
+			throw std::runtime_error("fcntl O_NONBLOCK failed");
 		}
 		epoll_event ev;
 		memset(&ev, 0, sizeof(ev));
