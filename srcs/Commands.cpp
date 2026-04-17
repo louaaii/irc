@@ -166,6 +166,7 @@ void Commands::NICK(int fd, const std::vector<std::string>& args, Server* server
     }
     if (args.size() != 2) {
         std::cout << "[NICK] Invalid arguments" << std::endl;
+        sendToClient(fd, ":server NOTICE :Usage: NICK <nickname>", server);
         sendError(fd, "461 NICK :Not enough parameters", server);
         return;
     }
@@ -208,6 +209,7 @@ void Commands::USER(int fd, const std::vector<std::string>& args, Server* server
         for (size_t i = 0; i < args.size(); ++i) {
             std::cout << "[USER] args[" << i << "] = " << args[i] << std::endl;
         }
+        sendToClient(fd, ":server NOTICE :Usage: USER <username> <hostname> <servername> <realname>", server);
         sendError(fd, "461 USER :Not enough parameters\nUsage : 'USER <username> <hostname> <servername> <realname>", server);
         return;
     }
@@ -249,10 +251,9 @@ void Commands::PING(int fd, const std::vector<std::string>& args, Server* server
 void Commands::QUIT(int fd, const std::vector<std::string>& args, Server* server) {
     std::cout << "[QUIT] Processing QUIT command for fd: " << fd << std::endl;
     if (server->Clients.find(fd) == server->Clients.end())
-        return;
+		return;
     (void)args;
     std::cout << "[QUIT] Disconnecting client " << fd << std::endl;
-    sendToClient(fd, ":server NOTICE AUTH :Goodbye", server);
     server->removeClient(fd);
 }
 
@@ -268,6 +269,7 @@ void Commands::JOIN(int fd, const std::vector<std::string>& args, Server* server
     }
     if (args.size() < 2) {
         std::cout << "[JOIN] Invalid arguments" << std::endl;
+        sendToClient(fd, ":server NOTICE :Usage: JOIN <channel> [key]", server);
         sendError(fd, "461 JOIN :Not enough parameters", server);
         return;
     }
@@ -336,6 +338,7 @@ void Commands::PART(int fd, const std::vector<std::string>& args, Server* server
     Client& client = server->Clients[fd];
     if (args.size() < 2) {
         std::cout << "[PART] Invalid arguments" << std::endl;
+        sendToClient(fd, ":server NOTICE :Usage: PART <channel> [message]", server);
         sendError(fd, "461 PART :Not enough parameters", server);
         return;
     }
@@ -351,8 +354,16 @@ void Commands::PART(int fd, const std::vector<std::string>& args, Server* server
     }
     std::cout << "[PART] Client " << fd << " (" << client.get_nick() << ") leaving channel " << channelName << std::endl;
     client.partChannel(channelName);
+
+    // Remove client from the channel's member list
+    if (server->_channels.find(channelName) != server->_channels.end()) {
+        server->_channels[channelName].removeMember(fd);
+    }
+
     std::string response = ":" + client.get_nick() + " PART " + channelName + " :" + partMsg;
     sendToClient(fd, response, server);
+    // Broadcast PART message to all other channel members
+    sendToChannel(channelName, response, server, fd);
 }
 
 void Commands::PRIVMSG(int fd, const std::vector<std::string>& args, Server* server) {
@@ -362,6 +373,7 @@ void Commands::PRIVMSG(int fd, const std::vector<std::string>& args, Server* ser
     Client& client = server->Clients[fd];
     if (args.size() < 3) {
         std::cout << "[PRIVMSG] Invalid arguments" << std::endl;
+        sendToClient(fd, ":server NOTICE :Usage: PRIVMSG <target> <message>", server);
         sendError(fd, "461 PRIVMSG :Not enough parameters", server);
         return;
     }
@@ -411,6 +423,7 @@ void Commands::TOPIC(int fd, const std::vector<std::string>& args, Server* serve
     Client& client = server->Clients[fd];
     if (args.size() < 2) {
         std::cout << "[TOPIC] Invalid arguments" << std::endl;
+        sendToClient(fd, ":server NOTICE :Usage: TOPIC <channel> [topic]", server);
         sendError(fd, "461 TOPIC :Not enough parameters", server);
         return;
     }
@@ -442,6 +455,7 @@ void Commands::KICK(int fd, const std::vector<std::string>& args, Server* server
     Client& client = server->Clients[fd];
     if (args.size() < 3) {
         std::cout << "[KICK] Invalid arguments" << std::endl;
+        sendToClient(fd, ":server NOTICE :Usage: KICK <channel> <nick> [reason]", server);
         sendError(fd, "461 KICK :Not enough parameters", server);
         return;
     }
@@ -485,6 +499,7 @@ void Commands::INVITE(int fd, const std::vector<std::string>& args, Server* serv
     Client& client = server->Clients[fd];
     if (args.size() < 3) {
         std::cout << "[INVITE] Invalid arguments" << std::endl;
+        sendToClient(fd, ":server NOTICE :Usage: INVITE <nick> <channel>", server);
         sendError(fd, "461 INVITE :Not enough parameters", server);
         return;
     }
@@ -522,6 +537,7 @@ void Commands::INVITE(int fd, const std::vector<std::string>& args, Server* serv
 
     std::string inviteMsg = ":" + client.get_nick() + " INVITE " + targetNick + " " + channelName;
     sendToClient(targetFd, inviteMsg, server);
+    sendToClient(targetFd, ":server NOTICE " + targetNick + " :You have been invited to " + channelName + " by " + client.get_nick(), server);
     sendToClient(fd, ":server NOTICE : Invite sent", server);
 }
 
@@ -585,12 +601,19 @@ void Commands::MODE(int fd, const std::vector<std::string>& args, Server* server
             channel.setTopicRestricted(add);
         }
         else if (modeChar == 'k') {
-            if (add && paramIdx < args.size()) {
-                std::cout << "[MODE] Setting key: " << args[paramIdx] << std::endl;
-                channel.setKey(args[paramIdx]);
-                paramIdx++;
+            if (add) {
+                if (paramIdx < args.size()) {
+                    std::cout << "[MODE] Setting key: " << args[paramIdx] << std::endl;
+                    channel.setKey(args[paramIdx]);
+                    paramIdx++;
+                }
+                else {
+                    std::cout << "[MODE] Mode +k requires a key parameter" << std::endl;
+                    sendError(fd, "461 MODE :Not enough parameters for mode +k", server);
+                    return;
+                }
             }
-            else if (!add) {
+            else {
                 std::cout << "[MODE] Removing key" << std::endl;
                 channel.removeKey();
             }
@@ -614,24 +637,36 @@ void Commands::MODE(int fd, const std::vector<std::string>& args, Server* server
                     }
                 }
             }
+            else {
+                std::cout << "[MODE] Mode +o requires a nick parameter" << std::endl;
+                sendError(fd, "461 MODE :Not enough parameters for mode +o", server);
+                return;
+            }
         }
         else if (modeChar == 'l') {
-            if (add && paramIdx < args.size()) {
-                std::string limitStr = args[paramIdx];
-                bool validLimit = true;
-                for (size_t j = 0; j < limitStr.length(); ++j) {
-                    if (!std::isdigit(limitStr[j])) {
-                        validLimit = false;
-                        break;
+            if (add) {
+                if (paramIdx < args.size()) {
+                    std::string limitStr = args[paramIdx];
+                    bool validLimit = true;
+                    for (size_t j = 0; j < limitStr.length(); ++j) {
+                        if (!std::isdigit(limitStr[j])) {
+                            validLimit = false;
+                            break;
+                        }
+                    }
+                    if (validLimit) {
+                        int limit = atoi(limitStr.c_str());
+                        if (limit > 0) {
+                            std::cout << "[MODE] Setting user limit to " << limit << std::endl;
+                            channel.setUserLimit(limit);
+                        }
+                        paramIdx++;
                     }
                 }
-                if (validLimit) {
-                    int limit = atoi(limitStr.c_str());
-                    if (limit > 0) {
-                        std::cout << "[MODE] Setting user limit to " << limit << std::endl;
-                        channel.setUserLimit(limit);
-                    }
-                    paramIdx++;
+                else {
+                    std::cout << "[MODE] Mode +l requires a limit parameter" << std::endl;
+                    sendError(fd, "461 MODE :Not enough parameters for mode +l", server);
+                    return;
                 }
             }
             else if (!add) {
@@ -661,6 +696,7 @@ void Commands::MODE(int fd, const std::vector<std::string>& args, Server* server
             modeMsg += " " + args[i];
         }
     }
+    sendToClient(fd, ":server NOTICE " + client.get_nick() + " :Mode changed: " + modes, server);
     sendToChannel(target, modeMsg, server, -1);
 }
 
