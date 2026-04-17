@@ -14,6 +14,7 @@ class Channel {
         std::string _topic;
         std::map<int, Client*> _members; 
         std::set<int> _operators;
+        std::set<int> _invitedUsers;
         bool _inviteOnly;
         bool _topicRestricted;
         std::string _key;
@@ -36,6 +37,9 @@ class Channel {
         
         void setInviteOnly(bool flag);
         bool isInviteOnly() const;
+        void addInvitedUser(int fd);
+        bool isUserInvited(int fd) const;
+        void removeInvitedUser(int fd);
         void setTopicRestricted(bool flag);
         bool isTopicRestricted() const;
         void setKey(const std::string& key);

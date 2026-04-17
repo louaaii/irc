@@ -308,6 +308,17 @@ void Commands::JOIN(int fd, const std::vector<std::string>& args, Server* server
         }
     }
 
+    // Check if channel is invite-only
+    if (channel.isInviteOnly()) {
+        if (!channel.isUserInvited(fd)) {
+            std::cout << "[JOIN] Channel is invite-only and user is not invited" << std::endl;
+            sendError(fd, "473 " + channelName + " :Cannot join channel (+i)", server);
+            return;
+        }
+        // User was invited, remove them from invite list after joining
+        channel.removeInvitedUser(fd);
+    }
+
     bool isFirstMember = channel.get_member_count() == 0;
 
     client.joinChannel(channelName);
@@ -511,10 +522,17 @@ void Commands::INVITE(int fd, const std::vector<std::string>& args, Server* serv
         return;
     }
     std::cout << "[INVITE] Sending invite to " << targetNick << " for channel " << channelName << std::endl;
+
+    // Add user to the channel's invite list
+    if (server->_channels.find(channelName) != server->_channels.end()) {
+        server->_channels[channelName].addInvitedUser(targetFd);
+    }
+
     std::string inviteMsg = ":" + client.get_nick() + " INVITE " + targetNick + " " + channelName;
     sendToClient(targetFd, inviteMsg, server);
     sendToClient(fd, ":server NOTICE : Invite sent", server);
 }
+
 
 void Commands::MODE(int fd, const std::vector<std::string>& args, Server* server) {
     std::cout << "[MODE] Processing MODE command for fd: " << fd << std::endl;

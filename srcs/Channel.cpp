@@ -70,6 +70,19 @@ bool Channel::isInviteOnly() const {
     return _inviteOnly;
 }
 
+void Channel::addInvitedUser(int fd) {
+    std::cout << "[CHANNEL] Adding fd " << fd << " to invite list for " << _name << std::endl;
+    _invitedUsers.insert(fd);
+}
+
+bool Channel::isUserInvited(int fd) const {
+    return _invitedUsers.find(fd) != _invitedUsers.end();
+}
+
+void Channel::removeInvitedUser(int fd) {
+    _invitedUsers.erase(fd);
+}
+
 void Channel::setTopicRestricted(bool flag) {
     std::cout << "[CHANNEL] Setting topic-restricted mode to " << flag << " for " << _name << std::endl;
     _topicRestricted = flag;
